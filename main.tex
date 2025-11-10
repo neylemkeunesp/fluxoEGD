@@ -1,0 +1,275 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,shapes.misc,fit,backgrounds}
+\usepackage{graphicx}
+\usepackage{pdflscape}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=blue}
+
+\title{\textbf{Fluxo de Fornecimento de Dados para Pesquisa}\\
+\large IA onde agrega valor, sempre com Humano no Loop}
+\author{UNESP -- CTInf}
+\date{\today}
+
+% ---- Estilos do fluxograma ----
+\tikzset{
+  >={Latex[length=2mm]},
+  node distance=8mm and 10mm,
+  font=\sffamily\footnotesize,
+  proc/.style   ={draw, rounded corners=1.5pt, minimum height=6mm, minimum width=24mm, align=center, fill=gray!8, inner sep=2pt},
+  data/.style   ={proc, fill=blue!5},
+  decision/.style={diamond, draw, aspect=2, inner sep=1pt, align=center, fill=gray!8},
+  hitl/.style   ={proc, thick, draw=black, fill=orange!35, label={[black!70]south east:\scriptsize\textbf{HITL}}},
+  ia/.style     ={proc, fill=green!20, label={[black!70]south east:\scriptsize\textbf{IA}}},
+  store/.style  ={proc, fill=purple!12},
+  line/.style   ={draw, -{Latex}},
+  group/.style  ={draw, rounded corners=2pt, inner sep=3pt, fill=gray!4},
+}
+
+\begin{document}
+\maketitle
+
+\section{Princípios}
+\begin{itemize}[leftmargin=8mm]
+  \item \textbf{Finalidade e minimização}: entregar \emph{apenas} o necessário ao objetivo aprovado.
+  \item \textbf{Privacidade por desenho}: detecção de PII, desidentificação e checagem de egress como trilho padrão.
+  \item \textbf{Humano no Loop (HITL)}: decisões de base legal, risco e liberação de saída são indelegáveis.
+  \item \textbf{Rastreabilidade e reprodutibilidade}: \emph{data cards}, \emph{model cards} e lineage.
+\end{itemize}
+
+\section{Fluxo original}
+
+\begin{landscape}
+\begin{figure}[p]
+\centering
+\includegraphics[height=0.55\textwidth]{fluxo_original.png}
+\caption{Fluxograma do processo original de fornecimento de dados para pesquisa.}
+\label{fig:fluxo_original}
+\end{figure}
+\end{landscape}
+
+\subsection{Análise crítica do fluxo inicial (com DTA = Diretoria Técnica Acadêmica)}
+
+\paragraph{Leitura do diagrama.}
+Partindo de \emph{Demanda por Dados}, o pedido segue para a \textbf{DTA (Diretoria Técnica Acadêmica)} e, em seguida, para o \textbf{EGD} (governança). Há um \emph{gateway} decisório \textbf{``Dados Pessoais?''}. 
+\begin{itemize}
+  \item \textbf{Se SIM:} o pedido vai ao \textbf{DPO} (encarregado de dados) e passa pelo nó \textbf{``Previsto?''}. 
+        \begin{itemize}
+          \item \textbf{Previsto = Não:} escala ao \textbf{CGPDP} e retorna ao \textbf{EGD}.
+          \item \textbf{Previsto = Sim:} retorna diretamente ao \textbf{EGD}.
+        \end{itemize}
+  \item \textbf{Se NÃO:} o \textbf{EGD} aciona as \textbf{Áreas} detentoras dos dados, consolida e retorna ao \textbf{EGD}.
+\end{itemize}
+Em ambos os casos, o \textbf{EGD} conclui a preparação e devolve à \textbf{DTA}, que realiza o \emph{fechamento/entrega}.
+
+\paragraph{Forças do desenho.}
+\begin{enumerate}[label=\alph*)]
+  \item \textbf{Roteamento por sensibilidade} (``Dados Pessoais?'') reduz risco de tratamento indevido.
+  \item \textbf{Duplo nível de conformidade} para dados pessoais: \emph{operacional} (DPO) e \emph{estratégico} (CGPDP em exceções).
+  \item \textbf{EGD como \emph{hub}}: centraliza governança e reduz canais informais de acesso a dados.
+  \item \textbf{Ciclo com Áreas}: responsabiliza a fonte do dado e permite checagem de dicionários/definições.
+\end{enumerate}
+
+\paragraph{Lacunas observadas.}
+\begin{enumerate}[label=\alph*)]
+  \item \textbf{Critério ``Previsto?''} pouco definido: sem referência explícita a registros de tratamento (ROPA), políticas de retenção e bases legais autorizadas.
+  \item \textbf{Ausência de trilhos técnicos} de privacidade/qualidade: não se explicitam anonimização/pseudonimização, critérios de agregação e verificação de vazamento de PII.
+  \item \textbf{Checkpoints humanos (HITL) não formalizados}: quem assina, quando e com qual evidência documental.
+  \item \textbf{Entrega orientada a arquivo}: não há menção a \emph{Safe Room} (ambiente controlado) nem a \emph{egress check} antes de saídas.
+  \item \textbf{Métricas e SLA} ausentes: não se medem prazos por etapa, taxa de devolução e motivos de negativa.
+  \item \textbf{Caminhos especiais} não representados: \emph{CEP/CONEP}, transferências internacionais, dados de terceiros/convênio e casos de dados \emph{mistos} (pessoais + sensíveis + não pessoais).
+\end{enumerate}
+
+\paragraph{Recomendações pragmáticas (sem alterar a espinha dorsal).}
+\begin{enumerate}[label=\arabic*)]
+  \item \textbf{Definir objetivamente o nó ``Previsto?''}: vincular a um catálogo/registro de tratamentos aprovado (ROPA) com base legal, finalidade, retenção e \emph{pacotes de dados} predefinidos.
+  \item \textbf{Inserir trilho técnico mínimo entre EGD e Áreas/DPO}: 
+        \begin{itemize}
+          \item Classificação de sensibilidade (PII/PHI/confidencial/interno/público).
+          \item Política de tratamento: anonimização/pseudonimização/agregação com parâmetros (p.ex., $k$-anonymity, supressão, \emph{top-coding}).
+          \item Validação de qualidade e vazamento de PII (regras e testes automatizados).
+        \end{itemize}
+  \item \textbf{Safe Room como padrão de entrega}: acesso em ambiente controlado (VDI/K8s), com \emph{egress review} antes de qualquer exportação.
+  \item \textbf{Formalizar HITLs via RACI}: DTA (intake/SLA), EGD (governança/qualidade), DPO (base legal/risco), Áreas (fonte/dicionário), CGPDP (exceções) com artefatos obrigatórios (formulário, parecer, \emph{data card}, termo de responsabilidade).
+  \item \textbf{Integrar CEP/CONEP} quando aplicável (intervenção com seres humanos ou dados sensíveis de saúde/biométricos).
+  \item \textbf{Implantar métricas de processo}: tempo médio por etapa, \% ``Previsto=Sim/Não'', \% devoluções por incompletude, incidentes de egress, backlog por tipo de dado.
+\end{enumerate}
+
+\paragraph{Exemplos operacionais no nó ``Previsto?''.}
+\begin{itemize}
+  \item \textbf{Previsto = Sim}: relatório semestral de evasão com coortes agregadas (política P--EDU--03; base legal de pesquisa -- art.~7º/11º, §4º, LGPD), pacote padronizado no catálogo.
+  \item \textbf{Previsto = Não}: vincular dados de saúde ocupacional a desempenho nominal individual para ranking; demanda \emph{ad hoc} com CGPDP e, em regra, forte anonimização ou reprovação.
+\end{itemize}
+
+\paragraph{Efeito prático para a DTA (Diretoria Técnica Acadêmica).}
+\begin{itemize}
+  \item \textbf{Previsibilidade} do intake: formulários completos, rotas claras e SLAs definidos.
+  \item \textbf{Velocidade sem risco}: com \emph{Safe Room} e \emph{egress check}, a DTA pode liberar acesso mais cedo e concentrar a discussão na saída (onde o risco é mensurável).
+  \item \textbf{Rastreabilidade institucional}: artefatos (pareceres, \emph{data cards}, logs) reduzem dependência de memória organizacional e facilitam auditorias.
+\end{itemize}
+
+\paragraph{Síntese.}
+O fluxo atual já separa sensibilidade, centraliza no EGD e escala exceções ao CGPDP, o que é correto. Para fechar as brechas sem aumentar atrito, recomenda-se: (i) objetivar o nó \emph{``Previsto?''} com catálogo/ROPA; (ii) instituir um trilho técnico mínimo de privacidade e qualidade; (iii) adotar \emph{Safe Room} com \emph{egress} obrigatório; e (iv) formalizar HITLs e SLAs. Assim, a DTA mantém velocidade operacional com segurança jurídica e científica.
+
+\section{Fluxo proposto (visão geral)}
+\begin{landscape}
+  
+\begin{center}
+\begin{tikzpicture}[scale=0.55, every node/.style={transform shape}]
+% Linha superior
+\node (portal)   [ia]                   {Portal de Solicita\c{c}\~ao\\(valida\c{c}\~ao de completude por LLM)};
+\node (triagem)  [hitl, right=of portal] {Triagem DPO / Data Steward\\(aprovar / ajustar / negar)};
+\node (rag)      [ia, right=of triagem]  {Discovery Sem\^antico (RAG)\\+ Cat\'alogo de Dados};
+\node (classif)  [ia, right=of rag]      {Classifica\c{c}\~ao de Sensibilidade\\+ DPIA ``light''};
+\node (tratdec)  [hitl, right=of classif]{Decis\~ao de Tratamento\\(anon/pseudo/agrega\c{c}\~ao)};
+\node (anon)     [ia, right=of tratdec]  {Desidentifica\c{c}\~ao\\(Presidio/ARX/SmartNoise)};
+\node (valid)    [ia, right=of anon]     {Valida\c{c}\~ao Estat\'istica\\(great\_expectations + testes)};
+\node (assina)   [hitl, right=of valid]  {Assinatura Guardi\~ao\\+ Emiss\~ao do Data Card};
+
+% Linha inferior
+\node (saferoom) [proc, below=12mm of anon, minimum width=38mm, label={[black!70]south:\scriptsize VDI/K8s, logs}] {Safe Room de Pesquisa\\(\textit{copiloto} SQL/Python)};
+\node (egress)   [ia, right=of saferoom, minimum width=28mm] {Egress Checker\\(regras + LLM + DP)};
+\node (egressH)  [hitl, right=of egress] {Libera\c{c}\~ao\\de Sa\'ida};
+\node (pub)      [store, right=of egressH, minimum width=34mm] {Publica\c{c}\~ao\\(Cards + lineage)};
+\node (metrics)  [ia, right=of pub, minimum width=30mm] {M\'etricas \& Auditoria\\(SLA, risco)};
+\node (gov)      [hitl, right=of metrics] {Governan\c{c}a\\(revis\~ao)};
+
+% Conexões
+\draw[line] (portal) -- (triagem);
+\draw[line] (triagem) -- (rag);
+\draw[line] (rag) -- (classif);
+\draw[line] (classif) -- (tratdec);
+\draw[line] (tratdec) -- (anon);
+\draw[line] (anon) -- (valid);
+\draw[line] (valid) -- (assina);
+\draw[line] (assina.south) |- ++(0,-7mm) -| (saferoom.north);
+\draw[line] (saferoom) -- (egress);
+\draw[line] (egress) -- (egressH);
+\draw[line] (egressH) -- (pub);
+\draw[line] (pub) -- (metrics);
+\draw[line] (metrics) -- (gov);
+
+% CEP/CONEP
+\node (cep) [decision, above=9mm of classif] {CEP/\\CONEP?};
+\draw[line] (classif.north) -- (cep.south);
+\node (cepok) [hitl, above=9mm of cep] {Parecer \'Etico};
+\draw[line] (cep) -- node[right, xshift=0.5mm]{\scriptsize Sim} (cepok);
+\draw[line] (cep) -| node[above left]{\scriptsize N\~ao} ++(-8mm,-12mm) |- (tratdec.west);
+
+%% Legenda \node (legend) [group, below=18mm of saferoom, minimum width=0.92\textwidth] {};
+%\node [proc, anchor=west]  (l1) at ([xshift=3mm]legend.west) {Processo};
+%\node [ia, right=6mm of l1] (l2) {Etapa com IA};
+%\node [hitl, right=6mm of l2] (l3) {Checkpoint Humano (HITL)};
+%\node [decision, right=6mm of l3] (l4) {Decis\~ao};
+%\node [store, right=6mm of l4] (l5) {Publica\c{c}\~ao/Acervo};
+%\node [anchor=west] at ([xshift=3mm,yshift=-6mm]legend.west) {\scriptsize \textbf{Obs.:} IA = LLM privado on-prem/isolado; desidentifica\c{c}\~ao com Presidio/ARX; DP via SmartNoise; qualidade com \texttt{great\_expectations}.};
+
+%% Caixa de comparação
+%\node (comp) [group, above=10mm of rag, minimum width=0.9\textwidth, align=left] {
+%\footnotesize\textbf{Mudan\c{c}as vs. fluxo antigo}: 
+%1) descoberta manual $\rightarrow$ \emph{RAG} no cat\'alogo; 
+%2) privacidade ad-hoc $\rightarrow$ pipeline formal (PII + DPIA + anon); 
+%3) exporta\c{c}\~ao livre $\rightarrow$ Safe Room + Egress Checker + HITL; 
+%4) documenta\c{c}\~ao dispersa $\rightarrow$ Data/Model Cards + lineage; 
+%5) governan\c{c}a t\'acita $\rightarrow$ checkpoints e m\'etricas.
+%};
+\end{tikzpicture}
+\end{center}
+\end{landscape}
+
+\section{Etapas e pontos com IA (e respectivos HITLs)}
+\begin{enumerate}[leftmargin=8mm]
+  \item \textbf{Portal de Solicitação (IA + HITL-1)}: LLM privado checa completude e \emph{data minimization}. DPO/Steward aprova/ajusta.
+  \item \textbf{Discovery Semântico (IA) + Validação (HITL-2)}: RAG no catálogo sugere datasets; Steward confirma adequação/restrições.
+  \item \textbf{Classificação de Sensibilidade \& DPIA light (IA) + Decisão (HITL-3)}: PII/risco; decisão por anonimização, pseudonimização ou agregação.
+  \item \textbf{Desidentificação \& Validação (IA) + Assinatura (HITL-4)}: Presidio/ARX/SmartNoise; testes de qualidade; guardião assina o \emph{data card}.
+  \item \textbf{Safe Room com Copiloto (IA) + Auditoria (HITL-5)}: copiloto SQL/Python on-prem; auditoria amostral de consultas.
+  \item \textbf{Egress Checker (IA) + Liberação (HITL-6)}: regras + LLM para checar PII residual e \emph{privacy budgets}; aprovação humana obrigatória.
+  \item \textbf{Publicação \& Cards (IA) + Curadoria (HITL-7)}: rascunho automático de \emph{data/model cards}; bibliotecário de dados revisa.
+  \item \textbf{Métricas \& Auditoria (IA) + Governança (HITL-8)}: SLA, incidentes e risco monitorados; comitê ajusta políticas.
+\end{enumerate}
+
+\section{Ferramentas sugeridas}
+\begin{itemize}[leftmargin=8mm]
+  \item \textbf{LLM privado}: Azure OpenAI ou Llama~3.1 afinado on-prem, com guardrails.
+  \item \textbf{Catálogo \& RAG}: BigQuery Data Catalog/Amundsen + Weaviate/PGVector.
+  \item \textbf{Detecção/Anon}: Microsoft Presidio, ARX; \emph{differential privacy} com SmartNoise.
+  \item \textbf{Qualidade}: \texttt{great\_expectations}.
+  \item \textbf{Orquestração/Acesso}: Airflow/Prefect; Safe Room (VDI/K8s), API Gateway (Kong).
+  \item \textbf{Políticas/Lineage}: OpenPolicyAgent; OpenLineage/Marquez.
+\end{itemize}
+
+\section{Exemplos práticos (UNESP)}
+\subsection*{Evasão Acadêmica}
+PII (RA/nome) $\rightarrow$ pseudonimização + \emph{k-anonymity}. Safe Room libera apenas agregados por coorte; egress bloqueia células com contagens $<15$.
+
+\subsection*{Saúde Ocupacional}
+Campos CID/atestados marcados como sensíveis $\rightarrow$ agregação + \emph{differential privacy}. Parecer ético (CEP/CONEP) quando aplicável; publicação restrita.
+
+\section{Métricas de sucesso}
+\begin{itemize}[leftmargin=8mm]
+  \item SLA por etapa; devoluções por incompletude; redução de \emph{scope creep}.
+  \item Risco de divulgação no egress; incidentes (meta: zero); satisfação do pesquisador.
+  \item Aderência a \emph{data cards/model cards}; cobertura de lineage.
+\end{itemize}
+
+\section{Glossário (siglas e termos)}
+\begin{tabular}{@{}p{3.2cm}p{12.5cm}@{}}
+\toprule
+\textbf{Sigla/Termo} & \textbf{Descrição} \\
+\midrule
+AI/IA & Inteligência Artificial; técnicas que aprendem padrões para auxiliar tarefas humanas.\\
+API & Interface para comunicação entre sistemas.\\
+ARX & Ferramenta open-source de anonimização (k-anonymity, l-diversity, t-closeness).\\
+Azure OpenAI & Hospedagem corporativa de LLMs com controles.\\
+BigQuery Data Catalog & Catálogo de metadados do Google.\\
+CEP/CONEP & Comitê de Ética em Pesquisa / Comissão Nacional de Ética em Pesquisa.\\
+CTInf & Coordenadoria de Tecnologia da Informação (UNESP).\\
+DLP & Data Loss Prevention; detecção e proteção de PII/PHI.\\
+DOI & Identificador persistente para dados/publicações.\\
+DP & Differential Privacy (Privacidade Diferencial).\\
+DPIA & Data Protection Impact Assessment (avaliação de impacto).\\
+DPO & Encarregado pela proteção de dados (LGPD).\\
+Egress Checker & Verificador de saídas do ambiente seguro (bloqueia PII residual).\\
+Great Expectations & Testes/regras de qualidade de dados.\\
+HITL & Human-In-The-Loop (checkpoint humano obrigatório).\\
+K8s & Kubernetes; orquestração de contêineres.\\
+Lineage & Rastreabilidade da origem/transformações/destino dos dados (OpenLineage/Marquez).\\
+Kong & API Gateway para autenticação, auditoria e políticas.\\
+LGPD & Lei Geral de Proteção de Dados (Brasil).\\
+LLM & Large Language Model (copiloto/assistente).\\
+Model Card & Ficha de propósito/dados/limites/risco de um modelo.\\
+OPA & Open Policy Agent; autorização por políticas.\\
+PHI & Protected Health Information (saúde).\\
+PII & Personally Identifiable Information (dado pessoal identificável).\\
+Presidio & Toolkit da Microsoft para detecção/mascaramento de PII.\\
+Prefect/Airflow & Orquestradores de pipelines de dados/ETL.\\
+RACI & Responsible, Accountable, Consulted, Informed (papéis).\\
+RAG & Retrieval-Augmented Generation; busca + geração com LLM.\\
+Safe Room & Ambiente seguro (VDI/K8s) sem saída de dados crus.\\
+SLA & Acordo/indicador de nível de serviço.\\
+SmartNoise & Biblioteca de privacidade diferencial.\\
+spaCy & Biblioteca NLP para detecção de entidades/PII.\\
+SQL & Linguagem padrão para consultas relacionais.\\
+UNESP & Universidade Estadual Paulista.\\
+VDI & Virtual Desktop Infrastructure (desktop virtual isolado).\\
+Weaviate/PGVector & Armazenamento vetorial para catálogos/RAG.\\
+\bottomrule
+\end{tabular}
+
+\vspace{6mm}
+\noindent\textit{Nota prática:} os pontos HITL (1--8) no diagrama
+ marcam decisões indelegáveis — base legal, aceitação de risco, 
+ liberação de egress e curadoria final. A IA acelera validações e 
+ documentação, mas \textbf{não} substitui a responsabilidade 
+ institucional. 
+
+\end{document}
